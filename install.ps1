@@ -1,7 +1,7 @@
 # ============================================================
 #  KUTTHROAT TOOL — One-Command Installer
 #  Run as Administrator in PowerShell:
-#  irm https://yourusername.github.io/kutthroat-tool/install.ps1 | iex
+#  irm https://eugoo.github.io/kutthroat-tool/install.ps1 | iex
 # ============================================================
 
 $ErrorActionPreference = 'SilentlyContinue'
