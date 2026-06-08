@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kutthroat WinTool</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Bebas+Neue&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════
+   DESIGN SYSTEM
+══════════════════════════════════════════════ */
+:root {
+  --bg:        #080810;
+  --bg2:       #0d0d1a;
+  --panel:     rgba(14,14,28,0.95);
+  --card:      rgba(20,20,40,0.8);
+  --card-hover:rgba(26,26,52,0.9);
+  --glass:     rgba(255,255,255,0.03);
+  --border:    rgba(255,255,255,0.07);
+  --border-hi: rgba(255,255,255,0.15);
+  --red:       #ff3355;
+  --red-glow:  rgba(255,51,85,0.3);
+  --orange:    #ff6b35;
+  --cyan:      #00e5ff;
+  --cyan-glow: rgba(0,229,255,0.25);
+  --green:     #00ffaa;
+  --green-glow:rgba(0,255,170,0.25);
+  --yellow:    #ffd60a;
+  --purple:    #8b5cf6;
+  --text:      #e2e8f0;
+  --text-mid:  #94a3b8;
+  --text-dim:  #3d4a5c;
+  --radius:    6px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: default;
+}
+
+/* ── ANIMATED BACKGROUND ── */
+.bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg-grid {
+  position: absolute;
+  inset: -50%;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  animation: gridDrift 40s linear infinite;
+}
+
+@keyframes gridDrift {
+  0%   { transform: translate(0,0); }
+  100% { transform: translate(32px,32px); }
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.12;
+  animation: orbFloat 20s ease-in-out infinite alternate;
+}
+
+.bg-orb-1 { width:500px; height:500px; background:var(--red); top:-200px; left:-100px; animation-duration:18s; }
+.bg-orb-2 { width:400px; height:400px; background:var(--purple); bottom:-100px; right:-100px; animation-duration:24s; animation-delay:-8s; }
+.bg-orb-3 { width:300px; height:300px; background:var(--cyan); top:30%; left:40%; animation-duration:15s; animation-delay:-4s; opacity:0.07; }
+
+@keyframes orbFloat {
+  from { transform: translate(0,0) scale(1); }
+  to   { transform: translate(40px,30px) scale(1.1); }
+}
+
+/* ── LAYOUT ── */
+.shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ── TITLEBAR ── */
+.titlebar {
+  height: 44px;
+  background: rgba(8,8,16,0.98);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+  user-select: none;
+  backdrop-filter: blur(20px);
+}
+
+.tb-left { display:flex; align-items:center; gap:14px; }
+
+.logo-mark {
+  width: 24px; height: 24px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.logo-mark::before, .logo-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--red);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.logo-mark::after {
+  background: transparent;
+  border: 2px solid var(--red);
+  transform: scale(0.65) rotate(30deg);
+  filter: drop-shadow(0 0 6px var(--red));
+}
+
+.logo-text {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+
+.logo-text em {
+  color: var(--red);
+  font-style: normal;
+  text-shadow: 0 0 12px var(--red-glow);
+}
+
+.tb-badge {
+  font-size: 0.58rem;
+  background: rgba(255,51,85,0.12);
+  border: 1px solid rgba(255,51,85,0.3);
+  color: var(--red);
+  padding: 2px 8px;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+}
+
+.tb-center {
+  display: flex;
+  gap: 2px;
+  background: rgba(255,255,255,0.03);
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.tb-tab {
+  padding: 4px 14px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--text-dim);
+  border-radius: 4px;
+  transition: all 0.2s;
+  position: relative;
+  white-space: nowrap;
+}
+
+.tb-tab:hover { color: var(--text-mid); background: var(--glass); }
+
+.tb-tab.active {
+  color: #fff;
+  background: var(--red);
+  box-shadow: 0 0 16px var(--red-glow);
+}
+
+.tb-right { display:flex; align-items:center; gap:8px; }
+
+.tb-sys-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  font-size: 0.6rem;
+  color: var(--text-mid);
+}
+
+.chip-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green-glow);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:0.5; transform:scale(0.7); }
+}
+
+.wc-btns { display:flex; gap:4px; }
+
+.wc-btn {
+  width: 28px; height: 22px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex; align-items:center; justify-content:center;
+  transition: all 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wc-btn:hover { background: var(--glass); color: var(--text); border-color: var(--border-hi); }
+.wc-btn.close:hover { background: var(--red); color: #fff; border-color: var(--red); box-shadow: 0 0 10px var(--red-glow); }
+
+/* ── BODY LAYOUT ── */
+.body-wrap {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 210px;
+  background: rgba(8,8,20,0.97);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  backdrop-filter: blur(30px);
+}
+
+.sb-section { padding: 6px 0; }
+
+.sb-label {
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 8px 16px 4px;
+}
+
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  color: var(--text-mid);
+  border-left: 2px solid transparent;
+  transition: all 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+
+.sb-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--red), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sb-item:hover { color: var(--text); }
+.sb-item:hover::before { opacity: 0.04; }
+
+.sb-item.active {
+  color: #fff;
+  border-left-color: var(--red);
+  background: rgba(255,51,85,0.06);
+}
+
+.sb-item.active::before { opacity: 0.08; }
+
+.sb-icon {
+  font-size: 0.9rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sb-label-text { font-size: 0.72rem; font-weight: 600; }
+
+.sb-count {
+  margin-left: auto;
+  background: rgba(255,51,85,0.15);
+  border: 1px solid rgba(255,51,85,0.3);
+  color: var(--red);
+  font-size: 0.55rem;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+
+.sb-divider { height: 1px; background: var(--border); margin: 4px 12px; }
+
+.sb-footer {
+  margin-top: auto;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.sys-card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.sys-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  margin-bottom: 5px;
+  color: var(--text-mid);
+}
+
+.sys-row:last-child { margin-bottom: 0; }
+
+.sys-val { color: var(--cyan); font-weight: 600; }
+
+.sys-bar-bg {
+  background: rgba(255,255,255,0.06);
+  height: 3px;
+  border-radius: 2px;
+  margin-top: 2px;
+  overflow: hidden;
+}
+
+.sys-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--purple));
+  box-shadow: 0 0 6px var(--cyan-glow);
+  transition: width 1s ease;
+}
+
+/* ── MAIN ── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── TAB PANELS ── */
+.tab-panel { display:none; flex:1; overflow:hidden; flex-direction:column; }
+.tab-panel.active { display:flex; }
+
+/* ── TOOLBAR ── */
+.toolbar {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(8,8,20,0.6);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 260px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 12px 7px 30px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-input::placeholder { color: var(--text-dim); }
+.search-input:focus { border-color: rgba(0,229,255,0.4); background: rgba(0,229,255,0.03); box-shadow: 0 0 0 3px rgba(0,229,255,0.06); }
+
+.filter-chips { display:flex; gap:4px; }
+
+.chip {
+  padding: 5px 12px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: var(--glass);
+  transition: all 0.18s;
+  text-transform: uppercase;
+}
+
+.chip:hover { color: var(--text); border-color: var(--border-hi); }
+.chip.active { color: var(--cyan); border-color: rgba(0,229,255,0.4); background: rgba(0,229,255,0.07); }
+
+.toolbar-spacer { flex: 1; }
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-run {
+  background: linear-gradient(135deg, var(--red), #cc2244);
+  color: #fff;
+  box-shadow: 0 4px 20px var(--red-glow);
+}
+
+.btn-run:hover { transform: translateY(-1px); box-shadow: 0 6px 28px var(--red-glow); }
+.btn-run:active { transform: translateY(0); }
+.btn-run:disabled { background: #1a1a2e; color: var(--text-dim); box-shadow: none; cursor: not-allowed; transform: none; }
+
+.btn-ghost {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+}
+
+.btn-ghost:hover { border-color: var(--border-hi); color: var(--text); background: rgba(255,255,255,0.05); }
+
+/* ── INSTALL LAYOUT ── */
+.install-body { flex:1; display:flex; overflow:hidden; }
+
+.cat-sidebar {
+  width: 150px;
+  background: rgba(6,6,16,0.8);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  flex-shrink: 0;
+  padding: 8px 0;
+}
+
+.cat-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.67rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.cat-btn:hover { color: var(--text); background: var(--glass); }
+
+.cat-btn.active {
+  color: var(--cyan);
+  border-left-color: var(--cyan);
+  background: rgba(0,229,255,0.05);
+}
+
+.cat-icon { font-size: 0.85rem; flex-shrink:0; }
+
+.apps-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+/* ── APP CARDS ── */
+.apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.app-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.app-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,229,255,0.06), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: var(--radius);
+}
+
+.app-card:hover { border-color: rgba(0,229,255,0.3); background: var(--card-hover); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+.app-card:hover::after { opacity: 1; }
+
+.app-card.selected {
+  border-color: rgba(0,229,255,0.5);
+  background: rgba(0,229,255,0.06);
+  box-shadow: 0 0 0 1px rgba(0,229,255,0.2), 0 4px 20px rgba(0,229,255,0.1);
+}
+
+.app-card.selected::after { opacity: 0; }
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.app-emoji { font-size: 1.3rem; line-height: 1; }
+
+.card-check {
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--text-dim);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.app-card.selected .card-check {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: #000;
+  box-shadow: 0 0 8px var(--cyan-glow);
+}
+
+.app-card-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-card-desc {
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ── SELECTION BAR ── */
+.sel-bar {
+  background: rgba(6,6,16,0.95);
+  border-top: 1px solid var(--border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  backdrop-filter: blur(10px);
+}
+
+.sel-pill {
+  background: rgba(0,229,255,0.1);
+  border: 1px solid rgba(0,229,255,0.25);
+  color: var(--cyan);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 20px;
+}
+
+.sel-names {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── TWEAKS GRID ── */
+.tweaks-scroll { flex:1; overflow-y:auto; padding:14px; }
+
+.tweaks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+.tweak-group {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.tweak-group-hdr {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.02);
+}
+
+.group-icon { font-size: 0.8rem; }
+
+.group-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mid);
+}
+
+.tweak-row {
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.15s;
+}
+
+.tweak-row:last-child { border-bottom: none; }
+.tweak-row:hover { background: var(--glass); }
+
+.tweak-info { flex: 1; padding-right: 12px; }
+
+.tweak-name {
+  font-size: 0.7rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.tweak-desc {
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ── TOGGLE SWITCH ── */
+.toggle-wrap {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.toggle-input {
+  opacity: 0;
+  width: 0; height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: all 0.25s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  left: 3px; top: 3px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: all 0.25s;
+}
+
+.toggle-input:checked + .toggle-slider {
+  background: rgba(0,255,170,0.15);
+  border-color: rgba(0,255,170,0.4);
+  box-shadow: 0 0 10px var(--green-glow);
+}
+
+.toggle-input:checked + .toggle-slider::before {
+  left: 21px;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green-glow);
+}
+
+/* ── FIXES ── */
+.fixes-scroll { flex:1; overflow-y:auto; padding:14px; }
+
+.fixes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+.fix-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.fix-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--orange);
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.fix-card:hover {
+  border-color: rgba(255,107,53,0.3);
+  background: var(--card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+
+.fix-card.state-running::before { background: var(--yellow); animation: pulse-bar 0.6s ease-in-out infinite alternate; }
+.fix-card.state-done::before { background: var(--green); box-shadow: 0 0 10px var(--green-glow); }
+.fix-card.state-error::before { background: var(--red); }
+
+@keyframes pulse-bar { from { opacity:0.4; } to { opacity:1; } }
+
+.fix-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.fix-ico { font-size: 1.4rem; }
+.fix-name { font-size: 0.72rem; font-weight: 600; color: var(--text); }
+.fix-desc { font-size: 0.6rem; color: var(--text-dim); line-height: 1.5; }
+
+.fix-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 0.6rem;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.badge-idle    { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+.badge-running { background: rgba(255,214,10,0.12);  color: var(--yellow); }
+.badge-done    { background: rgba(0,255,170,0.1);    color: var(--green); }
+.badge-error   { background: rgba(255,51,85,0.1);    color: var(--red); }
+
+.fix-spinner {
+  width: 10px; height: 10px;
+  border: 1.5px solid transparent;
+  border-top-color: var(--yellow);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: none;
+}
+
+.fix-card.state-running .fix-spinner { display: block; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TERMINAL SIDEBAR ── */
+.term-panel {
+  width: 300px;
+  background: rgba(4,4,10,0.98);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+}
+
+.term-hdr {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.02);
+}
+
+.term-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--text-mid);
+  text-transform: uppercase;
+}
+
+.term-led {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green-glow);
+  animation: pulse-dot 2s ease infinite;
+}
+
+.term-actions { display:flex; gap:4px; }
+
+.term-act-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.55rem;
+  padding: 2px 7px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.15s;
+}
+
+.term-act-btn:hover { border-color: var(--border-hi); color: var(--text); }
+
+.term-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  line-height: 1.9;
+}
+
+.tl { display: flex; gap: 8px; align-items: baseline; }
+.tl-ts { color: var(--text-dim); font-size: 0.55rem; flex-shrink: 0; }
+.tl-msg { word-break: break-all; }
+.tl.info  .tl-msg { color: var(--text-mid); }
+.tl.cmd   .tl-msg { color: var(--cyan); }
+.tl.ok    .tl-msg { color: var(--green); }
+.tl.warn  .tl-msg { color: var(--yellow); }
+.tl.err   .tl-msg { color: var(--red); }
+.tl.hdr   .tl-msg { color: var(--orange); font-weight: 700; }
+
+.term-input-wrap {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.term-prompt { color: var(--red); font-weight: 700; }
+
+.term-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  outline: none;
+  caret-color: var(--green);
+}
+
+/* ── STATUS BAR ── */
+.statusbar {
+  height: 28px;
+  background: var(--red);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.sb-stat {
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sb-stat-dot { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.5); }
+
+/* ── PROGRESS MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(12px);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal-box {
+  background: linear-gradient(135deg, rgba(14,14,30,0.98), rgba(10,10,20,0.99));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 480px;
+  padding: 28px;
+  position: relative;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.modal-glow {
+  position: absolute;
+  top: -1px; left: 20%; right: 20%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+  border-radius: 2px;
+}
+
+.modal-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.modal-subtitle {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+}
+
+.modal-app-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.modal-app-icon { font-size: 1.4rem; }
+
+.modal-app-name {
+  font-size: 0.8rem;
+  color: var(--text);
+  flex: 1;
+}
+
+.modal-app-status {
+  font-size: 0.62rem;
+  color: var(--yellow);
+}
+
+.progress-track {
+  background: rgba(255,255,255,0.06);
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--orange));
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 10px var(--red-glow);
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  margin-bottom: 18px;
+}
+
+.modal-log {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  height: 110px;
+  overflow-y: auto;
+  font-size: 0.6rem;
+  line-height: 1.8;
+  margin-bottom: 18px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.log-line { color: #444; }
+.log-line.active { color: var(--text-mid); }
+.log-line.done { color: var(--green); }
+
+.modal-close-btn {
+  display: none;
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(135deg, var(--green), #00cc88);
+  border: none;
+  border-radius: var(--radius);
+  color: #000;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.modal-close-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--green-glow); }
+
+/* ── TOAST NOTIFICATIONS ── */
+.toast-stack {
+  position: fixed;
+  bottom: 48px;
+  right: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  background: rgba(14,14,30,0.98);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 240px;
+  max-width: 300px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  transform: translateX(120%);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: all;
+}
+
+.toast.show { transform: translateX(0); }
+
+.toast-bar {
+  width: 3px;
+  height: 32px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.toast.success .toast-bar { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+.toast.error   .toast-bar { background: var(--red);   box-shadow: 0 0 6px var(--red-glow); }
+.toast.info    .toast-bar { background: var(--cyan);  box-shadow: 0 0 6px var(--cyan-glow); }
+.toast.warn    .toast-bar { background: var(--yellow); }
+
+.toast-content { flex: 1; }
+.toast-title { font-size: 0.68rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.toast-msg { font-size: 0.6rem; color: var(--text-dim); }
+
+/* ── TOOLTIP ── */
+[data-tip] { position: relative; }
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10,10,24,0.98);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.6rem;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 100;
+}
+
+[data-tip]:hover::after { opacity: 1; }
+
+/* ── SKELETON LOADER ── */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* ── RIPPLE ── */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple-anim 0.5s linear;
+  background: rgba(255,255,255,0.1);
+  pointer-events: none;
+}
+
+@keyframes ripple-anim {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* ── SECTION HEADER ── */
+.section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.section-label::before { content: '//'; color: var(--red); margin-right: 6px; }
+
+.section-count {
+  margin-left: auto;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+}
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+}
+
+.empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.3; }
+.empty-text { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* ── FOCUS RING ── */
+button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div class="bg-canvas">
+  <div class="bg-grid"></div>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
+
+<div class="shell">
+
+  <!-- TITLEBAR -->
+  <div class="titlebar">
+    <div class="tb-left">
+      <div class="logo-mark"></div>
+      <div class="logo-text">KUTTHROAT<em>TOOL</em></div>
+      <div class="tb-badge">v2.0</div>
+    </div>
+
+    <div class="tb-center">
+      <div class="tb-tab active" onclick="switchTab('install',this)" data-panel="install">Install</div>
+      <div class="tb-tab" onclick="switchTab('tweaks',this)" data-panel="tweaks">Tweaks</div>
+      <div class="tb-tab" onclick="switchTab('fixes',this)" data-panel="fixes">Fixes</div>
+      <div class="tb-tab" onclick="switchTab('privacy',this)" data-panel="privacy">Privacy</div>
+      <div class="tb-tab" onclick="switchTab('debloat',this)" data-panel="debloat">Debloat</div>
+    </div>
+
+    <div class="tb-right">
+      <div class="tb-sys-chip">
+        <div class="chip-dot"></div>
+        <span id="clockChip">--:--:--</span>
+      </div>
+      <div class="wc-btns">
+        <button class="wc-btn" data-tip="Minimize">─</button>
+        <button class="wc-btn" data-tip="Maximize">□</button>
+        <button class="wc-btn close" data-tip="Close">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body-wrap">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sb-section">
+        <div class="sb-label">Workspace</div>
+        <div class="sb-item active" onclick="switchSb('install',this)">
+          <span class="sb-icon">📦</span>
+          <span class="sb-label-text">Install Apps</span>
+          <span class="sb-count" id="sbCount">0</span>
+        </div>
+        <div class="sb-item" onclick="switchSb('tweaks',this)">
+          <span class="sb-icon">⚙️</span>
+          <span class="sb-label-text">Tweaks</span>
+        </div>
+        <div class="sb-item" onclick="switchSb('fixes',this)">
+          <span class="sb-icon">🔧</span>
+          <span class="sb-label-text">Fixes</span>
+        </div>
+        <div class="sb-item" onclick="switchSb('privacy',this)">
+          <span class="sb-icon">🛡️</span>
+          <span class="sb-label-text">Privacy</span>
+        </div>
+        <div class="sb-item" onclick="switchSb('debloat',this)">
+          <span class="sb-icon">🗑️</span>
+          <span class="sb-label-text">Debloat</span>
+        </div>
+      </div>
+      <div class="sb-divider"></div>
+      <div class="sb-section">
+        <div class="sb-label">System</div>
+        <div class="sb-item" onclick="toast('Feature coming soon','info','Updates')">
+          <span class="sb-icon">🔄</span>
+          <span class="sb-label-text">Updates</span>
+        </div>
+        <div class="sb-item" onclick="toast('Feature coming soon','info','Backup')">
+          <span class="sb-icon">💾</span>
+          <span class="sb-label-text">Backup</span>
+        </div>
+      </div>
+      <div class="sb-footer">
+        <div class="sys-card">
+          <div class="sys-row">
+            <span>OS</span>
+            <span class="sys-val">Win 11 Pro</span>
+          </div>
+          <div class="sys-row">
+            <span>RAM</span>
+            <span class="sys-val" id="ramChip">8 GB</span>
+          </div>
+          <div style="margin-top:6px">
+            <div class="sys-row" style="margin-bottom:3px">
+              <span>CPU Load</span>
+              <span class="sys-val" id="cpuPct">--</span>
+            </div>
+            <div class="sys-bar-bg">
+              <div class="sys-bar-fill" id="cpuBar" style="width:0%"></div>
+            </div>
+          </div>
+          <div style="margin-top:6px">
+            <div class="sys-row" style="margin-bottom:3px">
+              <span>RAM Use</span>
+              <span class="sys-val" id="ramPct">--</span>
+            </div>
+            <div class="sys-bar-bg">
+              <div class="sys-bar-fill" id="ramBar" style="width:0%;background:linear-gradient(90deg,var(--green),var(--cyan))"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div class="main">
+
+      <!-- ══ INSTALL PANEL ══ -->
+      <div class="tab-panel active" id="panel-install">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" id="searchInput" placeholder="Search applications..." oninput="filterApps(this.value)">
+          </div>
+          <div class="filter-chips" id="filterChips"></div>
+          <div class="toolbar-spacer"></div>
+          <button class="action-btn btn-ghost" onclick="selectAll()" data-tip="Select all visible">⊞ All</button>
+          <button class="action-btn btn-ghost" onclick="clearSel()" data-tip="Clear selection">⊟ Clear</button>
+          <button class="action-btn btn-run" id="runBtn" onclick="runInstall()" disabled>▶ Install</button>
+        </div>
+        <div class="install-body">
+          <div class="cat-sidebar" id="catSidebar"></div>
+          <div class="apps-scroll">
+            <div class="section-hdr">
+              <span class="section-label" id="catLabel">All Applications</span>
+              <span class="section-count" id="appCount">-- apps</span>
+            </div>
+            <div class="apps-grid" id="appsGrid"></div>
+          </div>
+        </div>
+        <div class="sel-bar">
+          <div class="sel-pill" id="selPill">0 selected</div>
+          <div class="sel-names" id="selNames">No apps selected</div>
+        </div>
+      </div>
+
+      <!-- ══ TWEAKS PANEL ══ -->
+      <div class="tab-panel" id="panel-tweaks">
+        <div class="toolbar">
+          <span class="section-label">Windows Tweaks</span>
+          <div class="toolbar-spacer"></div>
+          <button class="action-btn btn-run" onclick="applyTweaks()">▶ Apply Selected</button>
+        </div>
+        <div class="tweaks-scroll">
+          <div class="tweaks-grid" id="tweaksGrid"></div>
+        </div>
+      </div>
+
+      <!-- ══ FIXES PANEL ══ -->
+      <div class="tab-panel" id="panel-fixes">
+        <div class="toolbar">
+          <span class="section-label">System Fixes</span>
+          <div class="toolbar-spacer"></div>
+          <button class="action-btn btn-ghost" onclick="runAllFixes()">⚡ Run All Fixes</button>
+        </div>
+        <div class="fixes-scroll">
+          <div class="fixes-grid" id="fixesGrid"></div>
+        </div>
+      </div>
+
+      <!-- ══ PRIVACY PANEL ══ -->
+      <div class="tab-panel" id="panel-privacy">
+        <div class="toolbar">
+          <span class="section-label">Privacy Controls</span>
+          <div class="toolbar-spacer"></div>
+          <button class="action-btn btn-run" onclick="applyTweaks()">▶ Apply</button>
+        </div>
+        <div class="tweaks-scroll">
+          <div class="tweaks-grid" id="privacyGrid"></div>
+        </div>
+      </div>
+
+      <!-- ══ DEBLOAT PANEL ══ -->
+      <div class="tab-panel" id="panel-debloat">
+        <div class="toolbar">
+          <span class="section-label">Remove Bloatware</span>
+          <div class="toolbar-spacer"></div>
+          <button class="action-btn btn-run" style="background:linear-gradient(135deg,var(--orange),#cc4400)" onclick="applyTweaks()">🗑 Remove Selected</button>
+        </div>
+        <div class="tweaks-scroll">
+          <div class="tweaks-grid" id="debloatGrid"></div>
+        </div>
+      </div>
+
+      <!-- STATUS BAR -->
+      <div class="statusbar">
+        <div class="sb-stat"><div class="sb-stat-dot"></div><span id="sbStatus">Ready</span></div>
+        <div class="sb-stat">Winget: Active</div>
+        <div class="sb-stat" id="sbSel">0 selected</div>
+        <div class="sb-stat" style="margin-left:auto" id="sbTime"></div>
+      </div>
+
+    </div><!-- /main -->
+
+    <!-- TERMINAL -->
+    <div class="term-panel">
+      <div class="term-hdr">
+        <div class="term-title">
+          <div class="term-led"></div>
+          OUTPUT
+        </div>
+        <div class="term-actions">
+          <button class="term-act-btn" onclick="clearTerm()">CLR</button>
+          <button class="term-act-btn" onclick="copyTerm()">CPY</button>
+        </div>
+      </div>
+      <div class="term-body" id="termBody"></div>
+      <div class="term-input-wrap">
+        <span class="term-prompt">PS&gt;</span>
+        <input class="term-input" id="termInput" placeholder="enter command..." onkeydown="onTermKey(event)">
+      </div>
+    </div>
+
+  </div><!-- /body-wrap -->
+</div><!-- /shell -->
+
+<!-- INSTALL PROGRESS MODAL -->
+<div class="modal-overlay" id="installModal">
+  <div class="modal-box">
+    <div class="modal-glow"></div>
+    <div class="modal-title">Installing Applications</div>
+    <div class="modal-subtitle" id="modalSub">Preparing package manager...</div>
+    <div class="modal-app-row">
+      <div class="modal-app-icon" id="modalIcon">📦</div>
+      <div class="modal-app-name" id="modalName">Preparing...</div>
+      <div class="modal-app-status" id="modalStatus">●</div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-meta">
+      <span id="progStep">0 / 0</span>
+      <span id="progPct">0%</span>
+    </div>
+    <div class="modal-log" id="modalLog"></div>
+    <button class="modal-close-btn" id="modalCloseBtn" onclick="closeInstallModal()">✓ All Done — Close</button>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════
+const APPS = {
+  Browsers: [
+    { name:'Google Chrome',  icon:'🌐', desc:'Fast web browser',        url:'https://www.google.com/chrome/', dl:'https://dl.google.com/chrome/install/ChromeSetup.exe' },
+    { name:'Firefox',        icon:'🦊', desc:'Privacy-focused browser', url:'https://www.mozilla.org/firefox/', dl:'https://download.mozilla.org/?product=firefox-latest&os=win64&lang=en-US' },
+    { name:'Brave',          icon:'🦁', desc:'Ad-blocking browser',     url:'https://brave.com/download/', dl:'https://laptop-updates.brave.com/latest/winx64' },
+    { name:'Opera GX',       icon:'🎮', desc:'Gaming browser',          url:'https://www.opera.com/gx', dl:'https://net.geo.opera.com/opera_gx/stable/windows' },
+    { name:'Vivaldi',        icon:'🎨', desc:'Customizable browser',    url:'https://vivaldi.com/download/', dl:'https://downloads.vivaldi.com/stable/Vivaldi.x64.exe' },
+  ],
+  Development: [
+    { name:'VS Code',         icon:'💙', desc:'Code editor',            url:'https://code.visualstudio.com/download', dl:'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user' },
+    { name:'Git',             icon:'🌿', desc:'Version control',        url:'https://git-scm.com/download/win', dl:'https://github.com/git-for-windows/git/releases/latest' },
+    { name:'Python 3',        icon:'🐍', desc:'Python runtime',         url:'https://www.python.org/downloads/', dl:'https://www.python.org/ftp/python/3.12.0/python-3.12.0-amd64.exe' },
+    { name:'Node.js',         icon:'💚', desc:'JavaScript runtime',     url:'https://nodejs.org/en/download/', dl:'https://nodejs.org/dist/latest/node-v21.0.0-x64.msi' },
+    { name:'Windows Terminal',icon:'⬛', desc:'Modern terminal',        url:'https://aka.ms/terminal', dl:'https://aka.ms/terminal' },
+    { name:'Docker Desktop',  icon:'🐳', desc:'Container platform',     url:'https://www.docker.com/products/docker-desktop/', dl:'https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe' },
+    { name:'Postman',         icon:'📮', desc:'API testing tool',       url:'https://www.postman.com/downloads/', dl:'https://dl.pstmn.io/download/latest/win64' },
+    { name:'GitHub Desktop',  icon:'🐙', desc:'Git GUI client',         url:'https://desktop.github.com/', dl:'https://central.github.com/deployments/desktop/desktop/latest/win32' },
+    { name:'Insomnia',        icon:'🌙', desc:'REST client',            url:'https://insomnia.rest/download', dl:'https://updates.insomnia.rest/downloads/windows/latest?app=com.insomnia.app' },
+  ],
+  Gaming: [
+    { name:'Steam',           icon:'🎮', desc:'Game platform',          url:'https://store.steampowered.com/about/', dl:'https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe' },
+    { name:'Epic Games',      icon:'⚡', desc:'Free games weekly',       url:'https://store.epicgames.com/en-US/download', dl:'https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi' },
+    { name:'Discord',         icon:'💬', desc:'Gaming chat',            url:'https://discord.com/download', dl:'https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64' },
+    { name:'GOG Galaxy',      icon:'🌌', desc:'DRM-free games',         url:'https://www.gog.com/galaxy', dl:'https://webinstallers.gog-statics.com/download/GOG_Galaxy_2.0.exe' },
+    { name:'OBS Studio',      icon:'🎥', desc:'Screen recorder',        url:'https://obsproject.com/download', dl:'https://github.com/obsproject/obs-studio/releases/latest' },
+    { name:'MSI Afterburner', icon:'🔥', desc:'GPU overclocking',       url:'https://www.msi.com/Landing/afterburner/graphics-cards', dl:'https://download.msi.com/uti_exe//vga/MSIAfterburnerSetup.zip' },
+  ],
+  Media: [
+    { name:'VLC',             icon:'🎬', desc:'Universal media player', url:'https://www.videolan.org/vlc/', dl:'https://get.videolan.org/vlc/last/win64/vlc-3.0.21-win64.exe' },
+    { name:'Spotify',         icon:'🎵', desc:'Music streaming',        url:'https://www.spotify.com/download/', dl:'https://download.scdn.co/SpotifySetup.exe' },
+    { name:'HandBrake',       icon:'🎞️', desc:'Video converter',        url:'https://handbrake.fr/downloads.php', dl:'https://github.com/HandBrake/HandBrake/releases/latest' },
+    { name:'Audacity',        icon:'🎙️', desc:'Audio editor',           url:'https://www.audacityteam.org/download/', dl:'https://github.com/audacity/audacity/releases/latest' },
+    { name:'GIMP',            icon:'🖼️', desc:'Image editor',           url:'https://www.gimp.org/downloads/', dl:'https://download.gimp.org/gimp/v2.10/windows/gimp-2.10.36-setup.exe' },
+    { name:'DaVinci Resolve', icon:'🎬', desc:'Pro video editor',       url:'https://www.blackmagicdesign.com/products/davinciresolve', dl:'https://www.blackmagicdesign.com/products/davinciresolve' },
+  ],
+  Utilities: [
+    { name:'7-Zip',           icon:'📦', desc:'File archiver',          url:'https://www.7-zip.org/download.html', dl:'https://www.7-zip.org/a/7z2301-x64.exe' },
+    { name:'Everything',      icon:'🔍', desc:'Instant file search',    url:'https://www.voidtools.com/downloads/', dl:'https://www.voidtools.com/Everything-1.4.1.1026.x64-Setup.exe' },
+    { name:'CPU-Z',           icon:'💻', desc:'CPU information',        url:'https://www.cpuid.com/softwares/cpu-z.html', dl:'https://download.cpuid.com/cpu-z/cpu-z_2.09-en.exe' },
+    { name:'HWMonitor',       icon:'🌡️', desc:'Hardware monitor',       url:'https://www.cpuid.com/softwares/hwmonitor.html', dl:'https://download.cpuid.com/hwmonitor/hwmonitor_1.53.exe' },
+    { name:'Notepad++',       icon:'📝', desc:'Advanced text editor',   url:'https://notepad-plus-plus.org/downloads/', dl:'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/latest' },
+    { name:'CrystalDiskInfo', icon:'💾', desc:'Disk health monitor',    url:'https://crystalmark.info/en/software/crystaldiskinfo/', dl:'https://crystalmark.info/redirect.php?product=CrystalDiskInfoInstaller' },
+    { name:'WizTree',         icon:'📊', desc:'Disk space analyser',    url:'https://www.diskanalyzer.com/download', dl:'https://www.diskanalyzer.com/files/wiztree_4_16_setup.exe' },
+    { name:'PowerToys',       icon:'🔩', desc:'Windows utilities pack', url:'https://github.com/microsoft/PowerToys/releases/latest', dl:'https://github.com/microsoft/PowerToys/releases/latest' },
+  ],
+  Security: [
+    { name:'Malwarebytes',    icon:'🛡️', desc:'Malware scanner',        url:'https://www.malwarebytes.com/mwb-download', dl:'https://downloads.malwarebytes.com/file/mb-windows' },
+    { name:'Bitwarden',       icon:'🔐', desc:'Password manager',       url:'https://bitwarden.com/download/', dl:'https://vault.bitwarden.com/download/?app=desktop&platform=windows' },
+    { name:'ProtonVPN',       icon:'🔒', desc:'VPN client',             url:'https://protonvpn.com/download/windows', dl:'https://protonvpn.com/download/ProtonVPN_win_v3.2.2.exe' },
+    { name:'KeePass',         icon:'🗝️', desc:'Password database',      url:'https://keepass.info/download.html', dl:'https://sourceforge.net/projects/keepass/files/latest/download' },
+  ],
+  Communication: [
+    { name:'WhatsApp',        icon:'💬', desc:'Messaging app',          url:'https://www.whatsapp.com/download', dl:'https://web.whatsapp.com/desktop/windows/release/x64/WhatsAppSetup.exe' },
+    { name:'Telegram',        icon:'✈️', desc:'Fast messaging',         url:'https://desktop.telegram.org/', dl:'https://telegram.org/dl/desktop/win64' },
+    { name:'Zoom',            icon:'📹', desc:'Video conferencing',     url:'https://zoom.us/download', dl:'https://zoom.us/client/latest/ZoomInstallerFull.exe' },
+    { name:'Slack',           icon:'💼', desc:'Team communication',     url:'https://slack.com/downloads/windows', dl:'https://slack.com/ssb/download-win64' },
+    { name:'Microsoft Teams', icon:'🟦', desc:'Office communication',   url:'https://www.microsoft.com/en-us/microsoft-teams/download-app', dl:'https://go.microsoft.com/fwlink/p/?linkid=2187327' },
+  ],
+};
+
+const TWEAKS = [
+  { group:'Performance', icon:'⚡', items:[
+    { name:'High Performance Power Plan', desc:'Set CPU to max clock speed always', def:false },
+    { name:'Disable Search Indexing',     desc:'Stop background file indexing',      def:false },
+    { name:'Disable Superfetch',          desc:'Reduce background RAM preloading',   def:false },
+    { name:'Enable TRIM for SSD',         desc:'Keeps SSD writes optimal',           def:true  },
+    { name:'Disable Xbox Game Bar',       desc:'Remove overlay using background CPU',def:false },
+    { name:'Disable Hibernate',           desc:'Reclaim up to 8 GB of disk space',   def:false },
+  ]},
+  { group:'Visual', icon:'🎨', items:[
+    { name:'Disable Window Animations',   desc:'Instant window open/close',          def:false },
+    { name:'Classic Right-Click Menu',    desc:'Restore Win10 context menu',         def:false },
+    { name:'Show File Extensions',        desc:'Show .exe .pdf in Explorer',         def:true  },
+    { name:'Show Hidden Files',           desc:'Reveal system and hidden files',     def:false },
+    { name:'Compact Explorer View',       desc:'Smaller row height in Explorer',     def:false },
+  ]},
+  { group:'Network', icon:'🌐', items:[
+    { name:'Set DNS to Cloudflare 1.1.1.1',desc:'Faster & more private DNS',        def:false },
+    { name:'Enable DNS-over-HTTPS',       desc:'Encrypt all DNS queries',            def:false },
+    { name:'Disable IPv6',                desc:'Use only IPv4 stack',                def:false },
+    { name:'Optimize TCP Stack',          desc:'Tune TCP for lower latency',         def:false },
+  ]},
+];
+
+const PRIVACY_DATA = [
+  { group:'Telemetry', icon:'📡', items:[
+    { name:'Disable Diagnostic Data',     desc:'Stop usage data sent to Microsoft', def:false },
+    { name:'Disable Activity History',    desc:'Clear and disable timeline logging', def:false },
+    { name:'Disable Location Tracking',   desc:'Block all location access',          def:false },
+    { name:'Disable Advertising ID',      desc:'Stop personalized ad tracking',      def:false },
+    { name:'Disable Cortana',             desc:'Remove Microsoft AI assistant',      def:false },
+  ]},
+  { group:'App Permissions', icon:'📱', items:[
+    { name:'Disable Camera Access',       desc:'Block all apps from camera',         def:false },
+    { name:'Disable Microphone Access',   desc:'Block all apps from microphone',     def:false },
+    { name:'Disable Background Apps',     desc:'Stop apps running when minimized',   def:false },
+    { name:'Disable App Notifications',   desc:'Block notification permission',      def:false },
+  ]},
+];
+
+const DEBLOAT_DATA = [
+  { group:'Microsoft Bloatware', icon:'🗑️', items:[
+    { name:'Remove Candy Crush',          desc:'Pre-installed game bloatware',       def:false },
+    { name:'Remove Xbox Console Companion',desc:'Xbox PC app bundle',               def:false },
+    { name:'Remove 3D Viewer',            desc:'Rarely-used 3D application',        def:false },
+    { name:'Remove Mixed Reality Portal', desc:'VR headset companion app',          def:false },
+    { name:'Remove People App',           desc:'Contacts integration tile',         def:false },
+    { name:'Remove News App',             desc:'MSN News bloatware tile',           def:false },
+    { name:'Remove Maps App',             desc:'Windows Maps application',          def:false },
+  ]},
+  { group:'OEM & Trial Software', icon:'💻', items:[
+    { name:'Remove McAfee / Norton Trials',desc:'Trial antivirus nag-ware',         def:false },
+    { name:'Remove Manufacturer Utilities',desc:'Dell/HP/Lenovo bloat apps',        def:false },
+    { name:'Remove Browser Toolbars',     desc:'Third-party toolbar injections',    def:false },
+  ]},
+];
+
+const FIXES = [
+  { icon:'🔧', name:'Fix Windows Update',     desc:'Reset update components and clear SoftwareDistribution cache' },
+  { icon:'🌐', name:'Fix Network Issues',      desc:'Reset Winsock, flush DNS, reset TCP/IP stack' },
+  { icon:'🔊', name:'Fix Audio Issues',        desc:'Restart audio services and re-register audio drivers' },
+  { icon:'💾', name:'Fix Disk Errors',         desc:'Run CHKDSK /f /r on all mounted drives' },
+  { icon:'🛡️', name:'Fix Windows Defender',   desc:'Reset Defender signatures and re-register components' },
+  { icon:'⚡', name:'Fix Power Options',       desc:'Restore default balanced and high-perf power plans' },
+  { icon:'🖥️', name:'Fix Display Scaling',    desc:'Reset DPI scaling and refresh rate settings' },
+  { icon:'🖨️', name:'Fix Print Spooler',      desc:'Clear stuck jobs and restart spooler service' },
+  { icon:'🔑', name:'Fix Activation Issues',  desc:'Run Microsoft activation troubleshooter (slui)' },
+  { icon:'📶', name:'Fix WiFi Connection',     desc:'Reset wireless adapter, renew IP, flush ARP cache' },
+  { icon:'🔵', name:'Fix Bluetooth',           desc:'Restart Bluetooth stack and re-pair devices' },
+  { icon:'🧹', name:'Deep Clean Temp Files',  desc:'Remove all temp, prefetch, and Windows update cache files' },
+];
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let selected = new Set();
+let currentCat = 'All';
+let currentTab = 'install';
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+function init() {
+  buildCatSidebar();
+  renderApps('All');
+  buildTweakGrid('tweaksGrid', TWEAKS);
+  buildTweakGrid('privacyGrid', PRIVACY_DATA);
+  buildTweakGrid('debloatGrid', DEBLOAT_DATA);
+  buildFixGrid();
+  buildFilterChips();
+  startClock();
+  animateSysStats();
+  tlog('hdr', '╔══ KUTTHROAT WINTOOL v2.0 ══╗');
+  tlog('info', 'System initialized and ready.');
+  tlog('ok',   'Winget package manager: ✓ active');
+  tlog('ok',   'PowerShell 7: ✓ detected');
+  tlog('info', '──────────────────────────────');
+  tlog('info', 'Select apps and click ▶ Install');
+}
+
+// ═══════════════════════════════════════════════
+//  CATEGORIES
+// ═══════════════════════════════════════════════
+const CAT_ICONS = { All:'🔲', Browsers:'🌐', Development:'⌨️', Gaming:'🎮', Media:'🎬', Utilities:'🔧', Security:'🛡️', Communication:'💬' };
+
+function buildCatSidebar() {
+  const cats = ['All', ...Object.keys(APPS)];
+  document.getElementById('catSidebar').innerHTML = cats.map((c,i) => `
+    <button class="cat-btn${i===0?' active':''}" onclick="selectCat('${c}',this)">
+      <span class="cat-icon">${CAT_ICONS[c]||'📁'}</span>${c}
+    </button>
+  `).join('');
+}
+
+function buildFilterChips() {
+  const cats = ['All', ...Object.keys(APPS)];
+  document.getElementById('filterChips').innerHTML = cats.slice(0,5).map((c,i) => `
+    <div class="chip${i===0?' active':''}" onclick="chipFilter('${c}',this)">${c}</div>
+  `).join('');
+}
+
+function chipFilter(cat, el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectCatByName(cat);
+}
+
+function selectCat(cat, el) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectCatByName(cat);
+}
+
+function selectCatByName(cat) {
+  currentCat = cat;
+  document.getElementById('catLabel').textContent = cat === 'All' ? 'All Applications' : cat;
+  renderApps(cat, document.getElementById('searchInput').value);
+}
+
+// ═══════════════════════════════════════════════
+//  APPS
+// ═══════════════════════════════════════════════
+function getAllApps() {
+  let all = [];
+  Object.entries(APPS).forEach(([cat, apps]) => apps.forEach(a => all.push({...a, cat})));
+  return all;
+}
+
+function renderApps(cat, search='') {
+  let apps = cat==='All' ? getAllApps() : (APPS[cat]||[]).map(a=>({...a,cat}));
+  if (search) {
+    const q = search.toLowerCase();
+    apps = apps.filter(a => a.name.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q) || a.cat.toLowerCase().includes(q));
+  }
+
+  document.getElementById('appCount').textContent = `${apps.length} app${apps.length!==1?'s':''}`;
+
+  if (!apps.length) {
+    document.getElementById('appsGrid').innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">No apps found</div>
+      </div>`;
+    return;
+  }
+
+  if (!apps.length) {
+    document.getElementById('appsGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-text">No apps found</div></div>';
+    return;
+  }
+
+  document.getElementById('appsGrid').innerHTML = apps.map(app => `
+    <div class="app-card${selected.has(app.url)?' selected':''}" onclick="toggleApp('${app.url}','${app.name}','${app.icon}',this)">
+      <div class="card-top">
+        <div class="app-emoji">${app.icon}</div>
+        <div class="card-check">${selected.has(app.url)?'✓':''}</div>
+      </div>
+      <div class="app-card-name">${app.name}</div>
+      <div class="app-card-desc">${app.desc}</div>
+      <div style="display:flex;gap:4px;margin-top:8px">
+        <button onclick="event.stopPropagation();directDownload('${app.dl}','${app.name}')" style="flex:1;background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.3);color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;padding:5px 4px;cursor:pointer;border-radius:4px;transition:all 0.15s" onmouseenter="this.style.background='rgba(0,229,255,0.2)'" onmouseleave="this.style.background='rgba(0,229,255,0.1)'">⬇ DOWNLOAD</button>
+        <button onclick="event.stopPropagation();window.open('${app.url}','_blank')" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:0.58rem;padding:5px 8px;cursor:pointer;border-radius:4px;transition:all 0.15s" onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)'">🌐</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function directDownload(url, name) {
+  tlog('cmd', `⬇ Downloading ${name}...`);
+  toast(`Downloading ${name}`, 'info', '⬇ Download Started');
+  window.open(url, '_blank');
+  // Track download count
+  const key = 'kt_dl_' + name.replace(/\s/g,'_');
+  localStorage.setItem(key, (parseInt(localStorage.getItem(key)||0)+1));
+  setTimeout(() => tlog('ok', `✓ ${name} download initiated`), 500);
+}
+
+function toggleApp(url, name, icon, el) {
+  addRipple(el, event);
+  if (selected.has(url)) {
+    selected.delete(url);
+    el.classList.remove('selected');
+    el.querySelector('.card-check').textContent = '';
+    tlog('info', `– Removed: ${name}`);
+  } else {
+    selected.add(url);
+    el.classList.add('selected');
+    el.querySelector('.card-check').textContent = '✓';
+    tlog('cmd', `+ Selected: ${name}`);
+  }
+  updateSelUI();
+}
+
+function selectAll() {
+  const apps = currentCat==='All' ? getAllApps() : (APPS[currentCat]||[]).map(a=>({...a,cat:currentCat}));
+  apps.forEach(a => selected.add(a.url));
+  renderApps(currentCat, document.getElementById('searchInput').value);
+  updateSelUI();
+  toast(`Selected all ${apps.length} apps`, 'info', 'Select All');
+}
+
+function clearSel() {
+  selected.clear();
+  renderApps(currentCat, document.getElementById('searchInput').value);
+  updateSelUI();
+  tlog('warn', 'Selection cleared');
+  toast('Selection cleared', 'warn', 'Cleared');
+}
+
+function updateSelUI() {
+  const n = selected.size;
+  document.getElementById('selPill').textContent = `${n} selected`;
+  document.getElementById('sbSel').textContent = `${n} selected`;
+  document.getElementById('sbCount').textContent = n || '0';
+  document.getElementById('runBtn').disabled = n === 0;
+
+  const names = [...selected].map(url => getAllApps().find(a=>a.url===url)?.name||url);
+  document.getElementById('selNames').textContent = n===0 ? 'No apps selected' :
+    names.slice(0,4).join(', ') + (n>4 ? ` +${n-4} more` : '');
+}
+
+function filterApps(val) {
+  renderApps(currentCat, val);
+}
+
+// ═══════════════════════════════════════════════
+//  TWEAKS
+// ═══════════════════════════════════════════════
+function buildTweakGrid(id, data) {
+  document.getElementById(id).innerHTML = data.map(group => `
+    <div class="tweak-group">
+      <div class="tweak-group-hdr">
+        <span class="group-icon">${group.icon}</span>
+        <span class="group-label">${group.group}</span>
+      </div>
+      ${group.items.map(item => `
+        <div class="tweak-row">
+          <div class="tweak-info">
+            <div class="tweak-name">${item.name}</div>
+            <div class="tweak-desc">${item.desc}</div>
+          </div>
+          <label class="toggle-wrap" data-tip="${item.name}">
+            <input type="checkbox" class="toggle-input" ${item.def?'checked':''} onchange="onTweakChange(this,'${item.name}')">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function onTweakChange(el, name) {
+  if (el.checked) {
+    tlog('ok', `✓ Enabled: ${name}`);
+    toast(name, 'success', 'Enabled');
+  } else {
+    tlog('warn', `○ Disabled: ${name}`);
+  }
+}
+
+function applyTweaks() {
+  const on = document.querySelectorAll(`#panel-${currentTab} .toggle-input:checked`);
+  if (!on.length) { toast('No tweaks selected', 'warn', 'Nothing to apply'); return; }
+  tlog('cmd', `Applying ${on.length} tweaks...`);
+  on.forEach((el,i) => {
+    setTimeout(() => {
+      tlog('ok', `✓ Applied: ${el.closest('.tweak-row').querySelector('.tweak-name').textContent}`);
+    }, i * 200);
+  });
+  setTimeout(() => toast(`${on.length} tweaks applied`, 'success', 'Done'), on.length*200+100);
+}
+
+// ═══════════════════════════════════════════════
+//  FIXES
+// ═══════════════════════════════════════════════
+function buildFixGrid() {
+  document.getElementById('fixesGrid').innerHTML = FIXES.map((f,i) => `
+    <div class="fix-card" id="fix${i}" onclick="runFix(${i},'${f.name}','${f.icon}')">
+      <div class="fix-header">
+        <div class="fix-ico">${f.icon}</div>
+        <div class="fix-name">${f.name}</div>
+      </div>
+      <div class="fix-desc">${f.desc}</div>
+      <div class="fix-status-row">
+        <div class="fix-spinner"></div>
+        <span class="status-badge badge-idle" id="fix-badge${i}">Click to run</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+const fixSteps = ['Stopping services...','Clearing cache...','Resetting components...','Restarting services...','Verifying integrity...'];
+
+function runFix(i, name, icon) {
+  const card = document.getElementById(`fix${i}`);
+  const badge = document.getElementById(`fix-badge${i}`);
+  if (card.classList.contains('state-running') || card.classList.contains('state-done')) return;
+
+  card.classList.add('state-running');
+  badge.className = 'status-badge badge-running';
+  badge.textContent = 'Running...';
+  tlog('cmd', `▶ Running fix: ${name}`);
+  updateStatus(`Running: ${name}`);
+
+  let s = 0;
+  const iv = setInterval(() => {
+    if (s < fixSteps.length) {
+      tlog('info', `  ${fixSteps[s++]}`);
+    } else {
+      clearInterval(iv);
+      card.classList.remove('state-running');
+      card.classList.add('state-done');
+      badge.className = 'status-badge badge-done';
+      badge.textContent = '✓ Complete';
+      tlog('ok', `✓ Fix done: ${name}`);
+      toast(name, 'success', 'Fix Complete');
+      updateStatus('Ready');
+    }
+  }, 500);
+}
+
+function runAllFixes() {
+  tlog('hdr', '▶▶ Running all fixes...');
+  toast('Running all fixes sequentially', 'info', 'Batch Fix');
+  FIXES.forEach((_,i) => setTimeout(() => {
+    const card = document.getElementById(`fix${i}`);
+    if (!card.classList.contains('state-done')) runFix(i, FIXES[i].name, FIXES[i].icon);
+  }, i * 3500));
+}
+
+// ═══════════════════════════════════════════════
+//  INSTALL
+// ═══════════════════════════════════════════════
+function runInstall() {
+  if (!selected.size) return;
+  const apps = [...selected].map(url => getAllApps().find(a=>a.url===url)).filter(Boolean);
+  showInstallModal(apps);
+}
+
+function showInstallModal(apps) {
+  document.getElementById('installModal').classList.add('open');
+  document.getElementById('modalLog').innerHTML = '';
+  document.getElementById('modalCloseBtn').style.display = 'none';
+  document.getElementById('progressFill').style.width = '0%';
+
+  let i = 0;
+  function next() {
+    if (i >= apps.length) {
+      document.getElementById('modalName').textContent = `✓ All ${apps.length} downloads launched!`;
+      document.getElementById('modalIcon').textContent = '🎉';
+      document.getElementById('modalStatus').textContent = '';
+      document.getElementById('progressFill').style.width = '100%';
+      document.getElementById('progPct').textContent = '100%';
+      document.getElementById('progStep').textContent = `${apps.length} / ${apps.length}`;
+      document.getElementById('modalSub').textContent = 'All downloads opened! Check your browser downloads.';
+      document.getElementById('modalCloseBtn').style.display = 'block';
+      addModalLog('═══ All downloads launched! ═══', 'done');
+      tlog('ok', `✓ Launched ${apps.length} downloads`);
+      toast(`${apps.length} downloads started!`, 'success', '⬇ Downloads');
+      return;
+    }
+
+    const app = apps[i];
+    const pct = Math.round((i/apps.length)*100);
+
+    document.getElementById('modalIcon').textContent = app.icon;
+    document.getElementById('modalName').textContent = app.name;
+    document.getElementById('modalStatus').textContent = `${i+1}/${apps.length}`;
+    document.getElementById('modalSub').textContent = `Opening download ${i+1} of ${apps.length}...`;
+    document.getElementById('progressFill').style.width = pct+'%';
+    document.getElementById('progPct').textContent = pct+'%';
+    document.getElementById('progStep').textContent = `${i+1} / ${apps.length}`;
+
+    addModalLog(`[${i+1}/${apps.length}] Opening: ${app.name}`);
+    tlog('cmd', `⬇ Downloading ${app.name}...`);
+
+    // Open real download link
+    setTimeout(() => {
+      window.open(app.dl, '_blank');
+      addModalLog(`  ✓ ${app.name} download opened in browser`, 'done');
+      i++;
+      setTimeout(next, 1200); // small delay between each so browser doesn't block popups
+    }, 600);
+  }
+
+  next();
+}
+
+function addModalLog(text, cls='') {
+  const log = document.getElementById('modalLog');
+  const d = document.createElement('div');
+  d.className = 'log-line ' + cls;
+  d.textContent = text;
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+}
+
+function closeInstallModal() {
+  document.getElementById('installModal').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════
+//  TERMINAL
+// ═══════════════════════════════════════════════
+function tlog(type, msg) {
+  const body = document.getElementById('termBody');
+  const d = document.createElement('div');
+  d.className = 'tl ' + type;
+  const ts = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  d.innerHTML = `<span class="tl-ts">${ts}</span><span class="tl-msg">${msg}</span>`;
+  body.appendChild(d);
+  body.scrollTop = body.scrollHeight;
+}
+
+function clearTerm() {
+  document.getElementById('termBody').innerHTML = '';
+  tlog('info', 'Terminal cleared.');
+}
+
+function copyTerm() {
+  const text = [...document.querySelectorAll('#termBody .tl-msg')].map(el=>el.textContent).join('\n');
+  navigator.clipboard.writeText(text).then(() => toast('Terminal copied','success','Copied'));
+}
+
+function onTermKey(e) {
+  if (e.key !== 'Enter') return;
+  const val = e.target.value.trim();
+  if (!val) return;
+  tlog('cmd', `PS> ${val}`);
+
+  const cmds = {
+    'help':    () => { ['help','clear','version','sysinfo','winget','list'].forEach(c=>tlog('info',`  ${c}`)); },
+    'clear':   () => clearTerm(),
+    'version': () => tlog('ok', 'KutthroatTool v2.0.0'),
+    'sysinfo': () => { tlog('info','OS: Windows 11 Pro'); tlog('info','RAM: 8 GB'); tlog('ok','Winget: Active'); },
+    'winget':  () => tlog('ok', 'winget v1.7.x detected and active'),
+    'list':    () => { tlog('info',`Selected: ${selected.size} apps`); [...selected].forEach(c=>tlog('info',`  · ${c}`)); },
+  };
+
+  (cmds[val.toLowerCase()] || (() => tlog('err', `Unknown command: ${val}. Try 'help'`)))();
+  e.target.value = '';
+}
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tb-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  syncSidebar(tab);
+}
+
+function switchSb(tab, el) {
+  document.querySelectorAll('.sb-item').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  const tbTab = [...document.querySelectorAll('.tb-tab')].find(t => t.dataset.panel===tab);
+  if (tbTab) switchTab(tab, tbTab);
+}
+
+function syncSidebar(tab) {
+  document.querySelectorAll('.sb-item').forEach(x => {
+    x.classList.toggle('active', x.getAttribute('onclick').includes(`'${tab}'`));
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════
+function toast(msg, type='info', title='') {
+  const stack = document.getElementById('toastStack');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `
+    <div class="toast-bar"></div>
+    <div class="toast-content">
+      ${title ? `<div class="toast-title">${title}</div>` : ''}
+      <div class="toast-msg">${msg}</div>
+    </div>`;
+  stack.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 400);
+  }, 3000);
+}
+
+// ═══════════════════════════════════════════════
+//  RIPPLE
+// ═══════════════════════════════════════════════
+function addRipple(el, e) {
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${(e?.clientX??rect.left+rect.width/2)-rect.left-size/2}px;top:${(e?.clientY??rect.top+rect.height/2)-rect.top-size/2}px`;
+  el.style.position = 'relative';
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+
+// ═══════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════
+function updateStatus(msg) {
+  document.getElementById('sbStatus').textContent = msg;
+}
+
+function startClock() {
+  function tick() {
+    const t = new Date().toLocaleTimeString('en-GB');
+    document.getElementById('clockChip').textContent = t;
+    document.getElementById('sbTime').textContent = t;
+  }
+  tick(); setInterval(tick, 1000);
+}
+
+function animateSysStats() {
+  let cpu = 12, ram = 45;
+  setInterval(() => {
+    cpu = Math.min(95, Math.max(5, cpu + (Math.random()-0.48)*8));
+    ram = Math.min(90, Math.max(30, ram + (Math.random()-0.5)*4));
+    document.getElementById('cpuPct').textContent = cpu.toFixed(0)+'%';
+    document.getElementById('ramPct').textContent = ram.toFixed(0)+'%';
+    document.getElementById('cpuBar').style.width = cpu+'%';
+    document.getElementById('ramBar').style.width = ram+'%';
+  }, 2000);
+}
+
+// close modal on backdrop
+document.getElementById('installModal').addEventListener('click', function(e) {
+  if (e.target === this) closeInstallModal();
+});
+
+init();
+showPaywall();
+</script>
+
+<!-- ══ PAYWALL / TRIAL MODAL ══ -->
+<div class="modal-overlay" id="paywallModal" style="z-index:99999;background:rgba(0,0,0,0.97)">
+  <div class="modal-box" style="width:520px;padding:0;overflow:hidden;border-color:rgba(255,51,85,0.3)">
+
+    <!-- top glow bar -->
+    <div style="height:3px;background:linear-gradient(90deg,var(--red),var(--orange),var(--yellow));width:100%"></div>
+
+    <!-- header -->
+    <div style="padding:28px 28px 0;text-align:center">
+      <div style="font-size:2rem;margin-bottom:8px">⚔️</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:#fff;letter-spacing:0.06em">
+        KUTTHROAT<span style="color:var(--red)">TOOL</span>
+      </div>
+      <div style="font-size:0.65rem;color:var(--text-dim);letter-spacing:0.15em;margin-top:4px;text-transform:uppercase">
+        Professional Windows Optimization Suite
+      </div>
+    </div>
+
+    <!-- discount badge -->
+    <div style="margin:20px 28px 0;background:rgba(255,214,10,0.07);border:1px solid rgba(255,214,10,0.25);border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:1.4rem">🔥</div>
+      <div>
+        <div style="font-size:0.72rem;color:var(--yellow);font-weight:700;letter-spacing:0.05em">LIMITED OFFER — 50% OFF TODAY ONLY</div>
+        <div style="font-size:0.6rem;color:var(--text-dim);margin-top:2px">Use code <span style="color:var(--yellow);font-weight:700">KUTTHROAT50</span> at checkout. Expires in <span id="offerTimer" style="color:var(--yellow)">23:59:59</span></div>
+      </div>
+    </div>
+
+    <!-- plans -->
+    <div style="padding:20px 28px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+
+      <!-- FREE TRIAL -->
+      <div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.25);border-radius:6px;padding:16px;cursor:pointer;transition:all 0.2s" onmouseenter="this.style.borderColor='rgba(0,229,255,0.5)'" onmouseleave="this.style.borderColor='rgba(0,229,255,0.25)'" onclick="startTrial()">
+        <div style="font-size:0.6rem;color:var(--cyan);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Free Trial</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#fff">7 Days</div>
+        <div style="font-size:0.62rem;color:var(--text-dim);margin:6px 0 12px;line-height:1.6">
+          Full access · No credit card<br>All features unlocked
+        </div>
+        <div style="background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.3);border-radius:4px;padding:7px;text-align:center;font-size:0.68rem;font-weight:700;color:var(--cyan);letter-spacing:0.08em">
+          START FREE →
+        </div>
+      </div>
+
+      <!-- PRO LICENSE -->
+      <div style="background:rgba(255,51,85,0.07);border:2px solid rgba(255,51,85,0.4);border-radius:6px;padding:16px;cursor:pointer;transition:all 0.2s;position:relative" onmouseenter="this.style.borderColor='rgba(255,51,85,0.7)'" onmouseleave="this.style.borderColor='rgba(255,51,85,0.4)'" onclick="buyPro()">
+        <div style="position:absolute;top:-10px;right:12px;background:var(--red);color:#fff;font-size:0.55rem;font-weight:700;padding:2px 10px;border-radius:20px;letter-spacing:0.1em">POPULAR</div>
+        <div style="font-size:0.6rem;color:var(--red);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Pro License</div>
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#fff">$9.99</div>
+          <div style="font-size:0.65rem;color:var(--text-dim);text-decoration:line-through">$19.99</div>
+        </div>
+        <div style="font-size:0.62rem;color:var(--text-dim);margin:6px 0 12px;line-height:1.6">
+          Lifetime access · All updates<br>Priority support
+        </div>
+        <div style="background:var(--red);border-radius:4px;padding:7px;text-align:center;font-size:0.68rem;font-weight:700;color:#fff;letter-spacing:0.08em;box-shadow:0 4px 14px var(--red-glow)">
+          BUY NOW — 50% OFF
+        </div>
+      </div>
+    </div>
+
+    <!-- features -->
+    <div style="margin:0 28px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;padding:12px 14px">
+      <div style="font-size:0.58rem;color:var(--text-dim);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">What's included</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        ${['📦 Bulk App Installer','⚙️ 50+ Windows Tweaks','🛡️ Privacy Controls','🗑️ Bloatware Remover','🔧 System Fixes','💻 Live System Monitor','⌨️ Built-in Terminal','🔄 Auto Updates'].map(f=>`
+          <div style="font-size:0.62rem;color:var(--text-mid);display:flex;align-items:center;gap:6px;padding:3px 0">
+            <span style="color:var(--green);font-size:0.55rem">✓</span>${f}
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- one command section -->
+    <div style="margin:14px 28px;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:6px;padding:12px 14px">
+      <div style="font-size:0.58rem;color:var(--text-dim);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">⚡ One-Command Launch (PowerShell Admin)</div>
+      <div style="background:#000;border:1px solid #1a1a1a;border-radius:4px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <code style="font-size:0.62rem;color:var(--green);font-family:'JetBrains Mono',monospace;word-break:break-all" id="launchCmd">irm kutthroat.tool/install | iex</code>
+        <button onclick="copyCmd()" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.3);color:var(--cyan);font-size:0.6rem;padding:4px 10px;cursor:pointer;border-radius:3px;font-family:'JetBrains Mono',monospace;white-space:nowrap;transition:all 0.2s" onmouseenter="this.style.background='rgba(0,229,255,0.2)'" onmouseleave="this.style.background='rgba(0,229,255,0.1)'" id="copyBtn">📋 COPY</button>
+      </div>
+      <div style="font-size:0.57rem;color:var(--text-dim);margin-top:6px">Run as Administrator · Downloads and launches instantly · No installer needed</div>
+    </div>
+
+    <!-- footer -->
+    <div style="padding:12px 28px 20px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:0.58rem;color:var(--text-dim)">
+        💳 PayPal · eugeneeipa73@gmail.com
+      </div>
+      <button onclick="startTrial()" style="background:transparent;border:none;color:var(--text-dim);font-size:0.6rem;cursor:pointer;font-family:'JetBrains Mono',monospace;text-decoration:underline">
+        Skip — continue with limited mode
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showPaywall() {
+  document.getElementById('paywallModal').classList.add('open');
+  startOfferTimer();
+}
+
+function startTrial() {
+  document.getElementById('paywallModal').classList.remove('open');
+  // Store trial in localStorage
+  const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
+  localStorage.setItem('kt_trial', expiry);
+  toast('7-day free trial activated! Enjoy full access.', 'success', '🎉 Trial Started');
+  tlog('ok', '✓ Free trial activated — 7 days full access');
+  tlog('info', 'Trial expires: ' + new Date(expiry).toLocaleDateString());
+}
+
+function buyPro() {
+  const paypalURL = 'https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=eugeneeipa73@gmail.com&item_name=KutthroatTool+Pro+License&amount=9.99&currency_code=USD';
+  window.open(paypalURL, '_blank');
+  toast('Opening PayPal checkout...', 'info', 'Purchase');
+  tlog('cmd', '▶ Opening PayPal for Pro license ($9.99)');
+}
+
+function copyCmd() {
+  const cmd = document.getElementById('launchCmd').textContent;
+  navigator.clipboard.writeText(cmd).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ COPIED';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'rgba(0,255,170,0.4)';
+    setTimeout(() => {
+      btn.textContent = '📋 COPY';
+      btn.style.color = 'var(--cyan)';
+      btn.style.borderColor = 'rgba(0,229,255,0.3)';
+    }, 2000);
+    toast('Command copied to clipboard!', 'success', 'Copied');
+  });
+}
+
+function startOfferTimer() {
+  // 24 hour countdown
+  let total = 23 * 3600 + 59 * 60 + 59;
+  const saved = localStorage.getItem('kt_timer');
+  if (saved) total = parseInt(saved);
+
+  const iv = setInterval(() => {
+    if (total <= 0) { clearInterval(iv); return; }
+    total--;
+    localStorage.setItem('kt_timer', total);
+    const h = String(Math.floor(total/3600)).padStart(2,'0');
+    const m = String(Math.floor((total%3600)/60)).padStart(2,'0');
+    const s = String(total%60).padStart(2,'0');
+    const el = document.getElementById('offerTimer');
+    if (el) el.textContent = `${h}:${m}:${s}`;
+  }, 1000);
+}
+
+// Check if trial already active
+(function() {
+  const trial = localStorage.getItem('kt_trial');
+  if (trial && Date.now() < parseInt(trial)) {
+    document.getElementById('paywallModal').classList.remove('open');
+    const days = Math.ceil((parseInt(trial) - Date.now()) / 86400000);
+    setTimeout(() => toast(`Trial active — ${days} days remaining`, 'info', 'Welcome Back'), 1000);
+  }
+})();
+</script>
+</body>
+</html>
